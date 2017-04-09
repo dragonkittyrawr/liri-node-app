@@ -2,7 +2,7 @@ var keys = require("./keys.js");
 var twitter = require("twitter");
 var spotify = require("spotify");
 var request = require("request");
-// var r = require('rotten-api')("YOU_API_KEY");
+// var r = require('rotten-api')("YOUR_API_KEY");
 var fs = require("fs");
 
 var userCommand = process.argv[2];
@@ -14,11 +14,11 @@ var accessTokenKey = (keys.twitterKeys.access_token_key);
 var privateTokenKey = (keys.twitterKeys.access_token_secret);
 
 var doWhat;
-var command = "THIS IS SPARTA!!!";
+var command = "WAITING";
 
 var commandLog;
 
-var commandCount = 1;
+var commandCount;
 
 letsFuckinDoThis();
 
@@ -46,7 +46,7 @@ function myTweets(command) {
     });
 };
 
-function spotifyThis(command, input) {
+function spotifyThis(command, userInput) {
     if (userInput === undefined) {
         userInput = "\"The Sign\" by Ace of Base";
     };
@@ -72,24 +72,18 @@ function spotifyThis(command, input) {
     });
 };
 
-function omdbThis(command, input) {
+function omdbThis(command, userInput) {
 
     if (userInput === undefined) {
-
         userInput = "Mr.Nobody";
-
     };
 
     request("http://www.omdbapi.com/?t=" + userInput, function(error, response, body) {
 
         if (error) {
-
             console.log('Error occurred: ' + error);
-
             return;
-
         } else {
-
             console.log("======== MOVIE: " + JSON.parse(body).Title + " ========");
             console.log("Year: " + JSON.parse(body).Year);
             console.log("IMDB Rating: " + JSON.parse(body).imdbRating);
@@ -99,37 +93,24 @@ function omdbThis(command, input) {
             console.log("Actors: " + JSON.parse(body).Actors);
             console.log(JSON.parse(body).Ratings[1].Source + " Rating: " + JSON.parse(body).Ratings[1].Value);
             console.log("Future home of a link.")
-
         }
     });
 };
 
 function commandMe(userCommand) {
     if (userCommand !== "do-what-it-says") {
-
         command = userCommand;
-
-        // console.log("Obvs this works.");
-
     } else {
-
         fs.readFile("random.txt", "utf8", function(error, data) {
-
             doAsHeSay = data.split(",");
-
             // console.log(doAsHeSay);
-
             command = doAsHeSay[0];
             userInput = doAsHeSay[1];
-
             // console.log(command);
             // console.log(userInput);
-
         });
     };
-
     return command;
-
 };
 
 
@@ -137,53 +118,34 @@ function letsFuckinDoThis() {
 
     commandMe(userCommand);
 
+    if (userInput) {
+        commandLog = "Command: " + userCommand + ", Input: " + userInput;
+    } else {
+        commandLog = "Command: " + userCommand + ", Input: none";
+    }
+
     setTimeout(function() {
-        if (command !== "THIS IS SPARTA!!!") {
+        if (command !== "WAITING") {
+
+            fs.appendFile("log.txt", commandLog + "; ", function(error) {
+                if (error) {
+                    console.log('Error occurred: ' + error);
+                    return;
+                }
+            });
 
             if (command === undefined || command === "help") {
-
                 console.log("Welcome! Available commands:\nmy-tweets\nspotify-this-song \"song name by band name\"\nmovie-this \"movie name\"\ndo-what-it-says\nPlease enter a command.");
 
             } else if (command === "my-tweets") {
-
                 myTweets();
-
             } else if (command === "spotify-this-song") {
-
                 spotifyThis(userInput);
-
             } else if (command === "movie-this") {
-
                 omdbThis(userInput);
-
             } else {
-
                 console.log("Please enter a valid command. Type 'node liri.js help' for a command list.");
-
             };
-
         };
-    }, 500);
-
-    // console.log(command);
-
-    if (userInput) {
-        commandLog = "Command" + commandCount + ": " + userCommand + ", Input: " + userInput;
-        commandCount += 1;
-    } else {
-        commandLog = "Command" + commandCount + ": " + userCommand + ", Input: none";
-        commandCount += 1;
-    }
-
-    // display = 
-
-    fs.appendFile("log.txt", commandLog + "; ", function(error) {
-
-        if (error) {
-            console.log('Error occurred: ' + error);
-            return;
-        }
-
-    });
-
+    }, 5);
 }
