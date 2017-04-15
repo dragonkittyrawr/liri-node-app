@@ -1,9 +1,38 @@
+// Copyright 2017 ERIN STEWART
+
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+
+//     http://www.apache.org/licenses/LICENSE-2.0
+
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+
+
 var keys = require("./keys.js");
-var twitter = require("twitter");
+var Twitter = require("twitter");
 var spotify = require("spotify");
 var request = require("request");
 // var r = require('rotten-api')("YOUR_API_KEY");
 var fs = require("fs");
+var ajax = require("ajax");
+var jsdom = require("jsdom");
+
+var $ = require("jquery");
+
+var jQuery = require("jsdom").env("", function(err, window) {
+    if (err) {
+        console.error(err);
+        return;
+    }
+
+    $ = require("jquery")(window);
+});
 
 var userCommand = process.argv[2];
 var userInput = process.argv[3];
@@ -15,15 +44,29 @@ var privateTokenKey = (keys.twitterKeys.access_token_secret);
 
 var doWhat;
 var command = "WAITING";
-
+var input = "WAITING";
 var commandLog;
 
-var commandCount;
 
-letsFuckinDoThis();
+function commandMe(userCommand, userInput) {
+    if (userCommand !== "do-what-it-says") {
+        command = userCommand;
+        input = userInput;
+        // console.log("If : " + input);
+    } else {
+        fs.readFile("random.txt", "utf8", function(error, data) {
+            doAsHeSay = data.split(",");
+            command = doAsHeSay[0];
+            input = doAsHeSay[1];
+            // console.log("Else : " + input);
+        });
+    };
+    return (command, input);
+};
 
 function myTweets(command) {
-    var client = new twitter({
+
+    var client = new Twitter({
         consumer_key: consumerKey,
         consumer_secret: privateKey,
         access_token_key: accessTokenKey,
@@ -46,40 +89,52 @@ function myTweets(command) {
     });
 };
 
-function spotifyThis(command, userInput) {
-    if (userInput === undefined) {
-        userInput = "\"The Sign\" by Ace of Base";
+function spotifyThis(command, input) {
+
+    // console.log("Spotify : " + input);
+
+    if (input === undefined) {
+        input = "\"The Sign\" by Ace of Base";
     };
 
-    spotify.search({ type: "track", query: userInput }, function(error, data) {
+    spotify.search({ type: "track", query: input }, function(error, data) {
 
         if (error) {
-
             console.log('Error occurred: ' + error);
-
             return;
-
         } else {
-
+            // console.log(data.tracks.items);
             console.log("======== SONG: " + data.tracks.items[0].name + " ========");
             console.log("Artist: " + data.tracks.items[0].artists[0].name);
             console.log("Album: " + data.tracks.items[0].album.name);
             console.log("======== PREVIEW LINK ========");
             console.log("Preview: " + data.tracks.items[0].preview_url);
             console.log("==================");
-
         }
     });
 };
 
-function omdbThis(command, userInput) {
+function UrlExists(url, cb) {
+    $.ajax({
+        url: url,
+        dataType: 'text',
+        type: 'GET',
+        complete: function(xhr) {
+            if (typeof cb === 'function')
+                cb.apply(this, [xhr.status]);
+        }
+    });
+}
 
-    if (userInput === undefined) {
-        userInput = "Mr.Nobody";
+
+function omdbThis(command, input) {
+
+    // console.log("OMDB: " + input);
+
+    if (input === undefined) {
+        input = "Mr.Nobody";
     };
-
-    request("http://www.omdbapi.com/?t=" + userInput, function(error, response, body) {
-
+    request("http://www.omdbapi.com/?t=" + input, function(error, response, body) {
         if (error) {
             console.log('Error occurred: ' + error);
             return;
@@ -92,33 +147,42 @@ function omdbThis(command, userInput) {
             console.log("Plot: " + JSON.parse(body).Plot);
             console.log("Actors: " + JSON.parse(body).Actors);
             console.log(JSON.parse(body).Ratings[1].Source + " Rating: " + JSON.parse(body).Ratings[1].Value);
-            console.log("Future home of a link.")
+
+            rottenUrl = "https://www.rottentomatoes.com/m/" + JSON.parse(body).Title.replace(/ /g, "_");
+
+            var omdbFuckers = $.get(rottenUrl, function (data) {
+                if ($("#mainColumn", "h1").val() === "404 - NOT FOUND") {
+                    console.log("OMG");
+                }
+            }).statusCode(function(){
+                console.log("I have no idea what I'm doing.")
+            });
+            console.log(omdbFuckers.statusCode[0]);
+            // console.log($("#mainColumn", "h1").val());
+
+            UrlExists(rottenUrl, function(status) {
+                if (status === 200) {
+                    console.log(rottenUrl);
+                } else if (status === 404) {
+                    errRottenUrl = "https://www.rottentomatoes.com/m/" + JSON.parse(body).Title.replace(/ /g, "_") + "_" + JSON.parse(body).Year;
+                    console.log(errRottenUrl);
+                }
+            });
+            console.log(rottenUrl);
         }
     });
 };
 
-function commandMe(userCommand) {
-    if (userCommand !== "do-what-it-says") {
-        command = userCommand;
-    } else {
-        fs.readFile("random.txt", "utf8", function(error, data) {
-            doAsHeSay = data.split(",");
-            // console.log(doAsHeSay);
-            command = doAsHeSay[0];
-            userInput = doAsHeSay[1];
-            // console.log(command);
-            // console.log(userInput);
-        });
-    };
-    return command;
-};
+
 
 
 function letsFuckinDoThis() {
 
-    commandMe(userCommand);
+    commandMe(userCommand, userInput);
 
-    if (userInput) {
+    // console.log("Fuck : " + input);
+
+    if (input) {
         commandLog = "Command: " + userCommand + ", Input: " + userInput;
     } else {
         commandLog = "Command: " + userCommand + ", Input: none";
@@ -138,14 +202,20 @@ function letsFuckinDoThis() {
                 console.log("Welcome! Available commands:\nmy-tweets\nspotify-this-song \"song name by band name\"\nmovie-this \"movie name\"\ndo-what-it-says\nPlease enter a command.");
 
             } else if (command === "my-tweets") {
-                myTweets();
+                // console.log("Fuck Twitter: " + input);
+                myTweets(command);
             } else if (command === "spotify-this-song") {
-                spotifyThis(userInput);
+                // console.log("Fuck Spotify: " + input);
+                spotifyThis(command, input);
             } else if (command === "movie-this") {
-                omdbThis(userInput);
+                // console.log("Fuck OMDB: " + input);
+                omdbThis(command, input);
             } else {
                 console.log("Please enter a valid command. Type 'node liri.js help' for a command list.");
             };
         };
     }, 5);
 }
+
+
+letsFuckinDoThis();
