@@ -23,6 +23,10 @@ var fs = require("fs");
 var ajax = require("ajax");
 var jsdom = require("jsdom");
 
+var browserify = require("browserify");
+
+ 
+
 var $ = require("jquery");
 
 var jQuery = require("jsdom").env("", function(err, window) {
@@ -46,6 +50,14 @@ var doWhat;
 var command = "WAITING";
 var input = "WAITING";
 var commandLog;
+
+var pageText;
+
+var headerText;
+
+var rottenUrl = "http://www.rottentomatoes.com/m/";
+
+
 
 
 function commandMe(userCommand, userInput) {
@@ -114,17 +126,36 @@ function spotifyThis(command, input) {
     });
 };
 
-function UrlExists(url, cb) {
+function urlExists(rottenUrl) {
+
+    console.log("This is running right?")
+
     $.ajax({
-        url: url,
-        dataType: 'text',
-        type: 'GET',
-        complete: function(xhr) {
-            if (typeof cb === 'function')
-                cb.apply(this, [xhr.status]);
+        method: "GET",
+        url: rottenUrl,
+        dataType: "text"
+    }).done(function(data) {
+
+        console.log("OMFG");
+
+        pageText = data;
+
+        headerText = $("div#mainColumn").find("h1").attr("text");
+
+        console.log("Page Text 1: " + pageText);
+        console.log("Header Text 1: " + headerText);
+
+        if (headerText === "404 - NOT FOUND") {
+            console.log("OMFG");
         }
+
+        console.log("Page Text 2: " + pageText);
+        console.log("Header Text 2: " + headerText);
+
+    }).fail(function(jqXHR, textStatus, errorThrown) {
+        console.log("AJAX call failed: " + textStatus + ", " + errorThrown);
     });
-}
+};
 
 
 function omdbThis(command, input) {
@@ -148,27 +179,17 @@ function omdbThis(command, input) {
             console.log("Actors: " + JSON.parse(body).Actors);
             console.log(JSON.parse(body).Ratings[1].Source + " Rating: " + JSON.parse(body).Ratings[1].Value);
 
-            rottenUrl = "https://www.rottentomatoes.com/m/" + JSON.parse(body).Title.replace(/ /g, "_");
+            rottenUrl = "http://www.rottentomatoes.com/m/" + JSON.parse(body).Title.replace(/ /g, "_");
 
-            var omdbFuckers = $.get(rottenUrl, function (data) {
-                if ($("#mainColumn", "h1").val() === "404 - NOT FOUND") {
-                    console.log("OMG");
-                }
-            }).statusCode(function(){
-                console.log("I have no idea what I'm doing.")
-            });
-            console.log(omdbFuckers.statusCode[0]);
-            // console.log($("#mainColumn", "h1").val());
+            urlExists(rottenUrl);
 
-            UrlExists(rottenUrl, function(status) {
-                if (status === 200) {
-                    console.log(rottenUrl);
-                } else if (status === 404) {
-                    errRottenUrl = "https://www.rottentomatoes.com/m/" + JSON.parse(body).Title.replace(/ /g, "_") + "_" + JSON.parse(body).Year;
-                    console.log(errRottenUrl);
-                }
-            });
+            setTimeout(function() {
+
+            console.log("Page Text 3: " + pageText);
+            console.log("Header Text 3: " + headerText);
             console.log(rottenUrl);
+
+        }, 3000);
         }
     });
 };
